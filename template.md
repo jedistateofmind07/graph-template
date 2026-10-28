@@ -31,11 +31,14 @@ Ledger: [ledger.md](ledger.md#<name>) — every file/doc/code item this graph to
 Add items here or straight into the ledger; Claude merges both at run time.
 
 ## Nodes (required — one job each; if you can't name it in five words it's two nodes)
-| Node | Job (one line) | Depends on | Owns (files / artifacts) | Done when |
-|---|---|---|---|---|
-| <node-name> | <...> | — | <...> | <...> |
-| <node-name> | <...> | <node> | <...> | <...> |
-| review | Check diff against Done-when | all above | nothing | no correctness gaps |
+<!-- One node = one agent in subagents mode. Before launching, Claude prints a Scale line:
+     Nodes · Agents · Peak parallel (of the Budget's max) · With loops. Add rows or raise
+     the Budget to scale up; merge rows or use inline mode to scale down. -->
+| Node | Job (one line) | Depends on | Owns (files / artifacts) | Done when | Model |
+|---|---|---|---|---|---|
+| <node-name> | <...> | — | <...> | <...> | <fable / opus / sonnet / haiku; blank = session model> |
+| <node-name> | <...> | <node> | <...> | <...> | |
+| review | Check diff against Done-when | all above | nothing | no correctness gaps | sonnet |
 
 ## Edges (optional — derived from "Depends on" if blank)
 <sequential / fan-out / fan-in / loop-back with a condition, e.g. `review → fail → implement (max 2 loops)`>

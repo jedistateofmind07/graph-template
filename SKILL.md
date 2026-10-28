@@ -77,7 +77,9 @@ sections and stop. This is the only blocking question in the skill.
   default reviewer node and default stop conditions.
 - Enforce: five-word node names, disjoint file ownership (shared file → `integrate` node),
   at least one deterministic gate, reviewer sees only diff + Done-when, max loops from Budget
-  (default 2).
+  (default 2), parallel agents capped by the Budget's max.
+- Model per node: read the Nodes table's Model column (fable, opus, sonnet or haiku). Blank
+  means the session's model. Default the `review` node to sonnet when its cell is blank.
 - Write the drafted sections back into the brief under a `<!-- drafted by Claude -->` marker
   so the file is the record.
 - Fill the ledger section for this graph: merge items from Context & pointers, every
@@ -90,17 +92,25 @@ sections and stop. This is the only blocking question in the skill.
 options remain, pick: `inline` for ≤2 nodes or strictly sequential work, `subagents` when
 nodes need isolated context or a fresh reviewer, `workflow` when there is real fan-out
 (many independent items, adversarial verification, or a sweep). Print the resolved node
-table (one line per node) and the mode. If "Before running" is `ask`, stop and wait for a
+table (one line per node, model included), the mode, and one **Scale** line computed from
+the edges: `Nodes: N · Agents: A · Peak parallel: P of budget B · With loops: up to L`,
+where A is one per node in `subagents` (0 in `inline`; the planned agent() call count in
+`workflow`), P is the largest set of nodes with no unmet dependency at one moment, capped
+at B, and L is A plus the nodes a review loop can relaunch times the max loops. If "Before running" is `ask`, stop and wait for a
 yes. If `go`, continue without asking.
 
 **Step 4 — Execute per node.**
 - `inline`: do the work yourself, one node at a time, in dependency order.
 - `subagents`: one Agent call per node with a narrow prompt containing only that node's
   job, its inputs from shared state, its owned files, its Done-when, and the ledger rows
-  tagged with that node (or `all`) — not the whole ledger. Run independent
-  nodes in the same message so they execute concurrently.
+  tagged with that node (or `all`) — not the whole ledger. Pass the node's Model cell as
+  the Agent call's `model` parameter; omit it when the cell is blank. Run independent
+  nodes in the same message so they execute concurrently, no more at once than the
+  Budget's max parallel agents.
 - `workflow`: call the Workflow tool. This skill's Mode line is the user's explicit opt-in.
   Default to `pipeline()`; add adversarial verify for any node that produces findings.
+  Pass each node's Model cell as that `agent()` call's `model` option; the Budget's max
+  parallel agents overrides the session's default workflow size.
 - Every node returns the handoff block from principle 10. The next node verifies the
   artifact before using it.
 - Honor the stop conditions (principle 11). On a stop, report what happened and ask.
@@ -118,6 +128,7 @@ back along the edges up to the max; if still failing, stop and report rather tha
   handoff blocks), set Status to `done` or `stopped`, and move any item now used by
   2+ graphs into "Shared across graphs". If the run created a new doc, skill or
   entry-point file, add it to the Project index with a one-line description.
-- Append a `## Run log` section to the brief: date, mode, outcome, loops used, lessons.
+- Append a `## Run log` section to the brief: date, mode, outcome, the Scale line with
+  actual agents launched and peak parallel, loops used, lessons.
   If a lesson applies beyond this graph, propose one line for CLAUDE.md (principle 14);
   do not add it yourself.
